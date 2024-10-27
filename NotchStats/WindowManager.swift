@@ -42,6 +42,7 @@ class WindowManager: NSObject {
         }
 
         window.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        window.alphaValue = 0.0  // Start with the window hidden
         startMouseTracking()
     }
 
@@ -58,17 +59,37 @@ class WindowManager: NSObject {
     }
 
     private func handleGlobalMouseMoved(event: NSEvent) {
-        guard let window = window else { return }
+        guard window != nil else { return }
         let mouseLocation = NSEvent.mouseLocation  // Get the mouse location in screen coordinates
         
         if notchArea.contains(mouseLocation) {
             print("Mouse entered notch area")  // Debug log
-            window.orderFront(nil)
+            fadeInWindow()
         } else {
             print("Mouse exited notch area")  // Debug log
-            window.orderOut(nil)
+            fadeOutWindow()
         }
     }
+
+    private func fadeInWindow() {
+    guard let window = window else { return }
+    window.makeKeyAndOrderFront(nil)
+    NSAnimationContext.runAnimationGroup({ context in
+        context.duration = 0.3  // Duration of fade-in
+        window.animator().alphaValue = 1.0
+    }, completionHandler: nil)
+}
+
+private func fadeOutWindow() {
+    guard let window = window else { return }
+    NSAnimationContext.runAnimationGroup({ context in
+        context.duration = 1.0  // Duration of fade-out (adjusted for a slower effect)
+        window.animator().alphaValue = 0.0
+    }) { [weak window] in
+        window?.orderOut(nil)  // Ensure the window is removed after fading out
+    }
+}
+
 
     deinit {
         // Remove the event monitor when WindowManager is deinitialized
